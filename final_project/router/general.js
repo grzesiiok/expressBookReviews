@@ -92,17 +92,53 @@ public_users.get('/title/:title',function (req, res) {
 });
 
 //  Get book review
-public_users.get('/review/:isbn',function (req, res) {
-  const isbn = req.params.isbn;
+// public_users.get('/review/:isbn',function (req, res) {
+//   const isbn = req.params.isbn;
 
-  const book = books[isbn];
+//   const book = books[isbn];
 
-  if (book && book.reviews) {
-      res.json({ isbn: isbn, reviews: book.reviews });
-  } else {
-      res.status(404).json({ message: 'Reviews not found for this book' });
-  }
-  return res.status(300).json({message: "Yet to be implemented"});
-});
+//   if (book && book.reviews) {
+//       res.json({ isbn: isbn, reviews: book.reviews });
+//   } else {
+//       res.status(404).json({ message: 'Reviews not found for this book' });
+//   }
+//   return res.status(300).json({message: "Yet to be implemented"});
+// });
+
+public_users.put('/auth/review/:isbn', function (req, res) {
+    const isbn = req.params.isbn;
+    const { review } = req.query;
+    const username = req.session.username;
+  
+    if (!username) {
+      return res.status(401).json({ message: "You must be logged in to post a review" });
+    }
+  
+    const book = books[isbn];
+  
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+  
+    if (!review) {
+      return res.status(400).json({ message: "Review content is required" });
+    }
+  
+    if (book.reviews) {
+      const existingReviewIndex = book.reviews.findIndex(r => r.username === username);
+  
+      if (existingReviewIndex !== -1) {
+        book.reviews[existingReviewIndex].review = review;
+      } else {
+        book.reviews.push({ username, review });
+      }
+    } else {
+      book.reviews = [{ username, review }];
+    }
+  
+    return res.status(200).json({ message: "Review added/updated successfully", reviews: book.reviews });
+  });
+  
+  
 
 module.exports.general = public_users;
